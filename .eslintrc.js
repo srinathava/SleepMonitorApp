@@ -1,4 +1,5 @@
 module.exports = {
+    "parser": "babel-eslint",
     "env": {
         "browser": true,
         "es6": true
@@ -20,13 +21,10 @@ module.exports = {
             "error",
             4
         ],
-        "linebreak-style": [
-            "error",
-            "unix"
-        ],
         "semi": [
             "error",
             "always"
-        ]
+        ],
+        'no-console': 0
     }
 };

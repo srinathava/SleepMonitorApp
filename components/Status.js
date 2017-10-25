@@ -1,52 +1,53 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import Zeroconf from "react-native-zeroconf";
-
-const zeroconf = new Zeroconf();
 
 export default class Status extends React.Component {
     constructor() {
         super();
-        this.state = { spo2: 100, bpm: 100, alarm: 0 };
-        this.timer = null;
+
+        this.state = { 
+            SPO2: 100, 
+            BPM: 100, 
+            motion: 0, 
+            alarm: 0, 
+            oximeterStatus: "",
+            motionReason: "",
+            readTime: ""
+        };
+
         this.updateStatus = this.updateStatus.bind(this);
     }
 
-    componentWillUnmount() {
-        zeroconf.stop();
-
-        this.timer.clearInterval();
-        this.timer = null;
-
+    componentDidMount() {
+        this.timer = setInterval(() => {
+            this.updateStatus(`${this.props.uri}/status`);
+        }, 2000);
     }
 
-    componentDidMount() {
-        zeroconf.scan("http", "tcp", "local.");
-
-        zeroconf.on("resolved", (service) => {
-            console.log(`found new service "${service.name}" at ${service.addresses[0]}:${service.port}`);
-
-            var uri = `http://${service.addresses[0]}:${service.port}`;
-            this.timer = setInterval(() => this.updateStatus(uri), 2000);
-        });
+    componentWillUnmount() {
+        if (this.timer !== null) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
     }
 
     updateStatus(uri) {
         fetch(uri)
             .then((response) => response.json())
-            .then((responseJson) => {
-                this.setState({ spo2: responseJson.SPO2, bpm: responseJson.BPM });
+            .then((json) => {
+                this.setState(json);
             })
             .catch(() => {
-                this.setState({spo2: -1, bpm: -1});
+                this.setState({SPO2: -1, BPM: -1});
             });
     }
 
     render() {
         return (
             <View style={styles.status}>
-                <Text style={[styles.statusTxt, { color: "green" }]}>BPM2: {this.state.bpm}</Text>
-                <Text style={[styles.statusTxt, { color: "red" }]}>SPO2: {this.state.spo2}</Text>
+                <Text style={[styles.statusTxt, { color: "green" }]}>{this.state.BPM} <Text style={{fontSize: 16}}>(BPM)</Text></Text>
+                <Text style={[styles.statusTxt, { color: "red" }]}>{this.state.SPO2} <Text style={{fontSize: 16}}>(SPO2)</Text></Text>
+                <Text style={[styles.statusTxt, { color: "white", fontSize: 16 }]}>{this.state.readTime}</Text>
             </View>
         );
     }
@@ -57,6 +58,7 @@ const styles = StyleSheet.create({
         position: "absolute",
         top: 0,
         right: 0,
+        minWidth: 200,
         backgroundColor: "#223"
     },
     statusTxt: {
