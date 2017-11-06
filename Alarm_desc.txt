@@ -1,0 +1,26 @@
+mode ACTIVE
+    mode OK
+    end
+    mode NOT_OK
+        mode PLAYING
+            audio = 1;
+            exit: audio = 0;
+        end
+        mode SNOOZE
+        end
+        transitions
+            PLAYING -> snooze -> SNOOZE
+            SNOOZE -> after(snoozeTime, sec) -> PLAYING
+        end
+    end
+    transitions
+        OK -> trigger -> NOT_OK
+        NOT_OK -> dismiss -> OK
+    end
+end
+mode SUPPRESSED
+end
+transitions
+    ACTIVE -> suppress -> SUPPRESSED
+    SUPPRESSED -> unsuppress -> ACTIVE
+end

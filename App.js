@@ -1,9 +1,11 @@
 import React from "react";
-import { StyleSheet, Text, Button, View, WebView, AppState } from "react-native";
+import { StyleSheet, Text, View, WebView, AppState } from "react-native";
 import Status from './components/Status';
-import Sound from 'react-native-sound';
+import AlarmManager from './AlarmManager';
 
 import Zeroconf from "react-native-zeroconf";
+
+import FCM from 'react-native-fcm';
 
 const zeroconf = new Zeroconf();
 
@@ -33,6 +35,7 @@ class WaitForServer extends React.Component {
                 this.props.found(uri);
             }
         });
+
     }
 
     render() {
@@ -40,17 +43,19 @@ class WaitForServer extends React.Component {
     }
 }
 
-class AlarmManager extends React.Component {
+class Bridge {
+    constructor() {
+        this.listeners = [];
+    }
 
-    render() {
-        return (
-            <View style={styles.alarmManager}>
-                <Text style={{fontSize: 24 }}>Baby's moving</Text>
-                <View style={{padding: 5}}>
-                    <Button title="Dismiss" onPress={()=>{}} />
-                </View>
-            </View>
-        );
+    addListener(listener) {
+        this.listeners.push(listener);
+    }
+
+    notify(data) {
+        for (var listener of this.listeners) {
+            listener(data);
+        }
     }
 }
 
@@ -58,19 +63,30 @@ class MainPage extends React.Component {
 
     constructor() {
         super();
-    }
 
-    _handleAppStateChange = (nextState) => {
-        console.log(`current state = ${AppState.currentState}, nextState = ${nextState}`);
+        this.bridge = new Bridge();
     }
 
     componentWillUnmount() {
         console.log("unmounting main page");
-        AppState.removeEventListener("change", this._handleAppStateChange);
     }
 
     componentDidMount() {
-        AppState.addEventListener("change", this._handleAppStateChange);
+        // iOS: show permission prompt for the first call. later just check
+        // permission in user settings
+        // Android: check permission in user settings
+        FCM.requestPermissions()
+        .then(()=> {
+            console.log('granted')
+        })
+        .catch(()=>{
+            console.log('notification permission rejected')
+        });
+
+        FCM.getFCMToken().then(token => {
+            console.log(token);
+            // store fcm token in your server
+        });
     }
 
     render() {
@@ -81,8 +97,8 @@ class MainPage extends React.Component {
                         source={{ uri: `${this.props.uri}/minimal.html` }}
                         style={{ flex: 1 }}
                     />
-                    <Status uri = {this.props.uri} />
-                    <AlarmManager />
+                    <Status uri = {this.props.uri} bridge={this.bridge} />
+                    <AlarmManager bridge={this.bridge} />
                 </View>
             </View>
         );
@@ -92,7 +108,7 @@ class MainPage extends React.Component {
 export default class App extends React.Component {
     constructor() {
         super();
-        this.state = { serverUri: 'http://192.168.1.13' };
+        this.state = { serverUri: 'http://192.168.1.18' };
     }
 
     render() {

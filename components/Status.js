@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, AppState } from "react-native";
 
 export default class Status extends React.Component {
     constructor() {
@@ -15,30 +15,60 @@ export default class Status extends React.Component {
             readTime: ""
         };
 
+        this.timer = null;
         this.updateStatus = this.updateStatus.bind(this);
+        this._handleAppStateChange = this._handleAppStateChange.bind(this);
     }
 
     componentDidMount() {
+        this.startTimer();
+        AppState.addEventListener("change", this._handleAppStateChange);
+    }
+
+    startTimer() {
+        if (this.timer !== null) {
+            return;
+        }
+        console.log('Starting status timer');
         this.timer = setInterval(() => {
             this.updateStatus(`${this.props.uri}/status`);
         }, 2000);
     }
 
-    componentWillUnmount() {
+    stopTimer() {
         if (this.timer !== null) {
+            console.log('Stopping status timer');
             clearInterval(this.timer);
             this.timer = null;
         }
+    }
+
+    componentWillUnmount() {
+        this.stopTimer();
+        AppState.removeEventListener("change", this._handleAppStateChange);
+    }
+
+    _handleAppStateChange(nextState) {
+        if (nextState === "background") {
+            console.log('app going into background');
+            //this.stopTimer();
+        } else if (nextState === "active") {
+            console.log('app becoming active');
+            //this.startTimer();
+        }
+    }
+
+    setStateAndNotify(partialState) {
+        var nextState = Object.assign(this.state, partialState);
+        this.props.bridge.notify(nextState);
+        this.setState(partialState);
     }
 
     updateStatus(uri) {
         fetch(uri)
             .then((response) => response.json())
             .then((json) => {
-                this.setState(json);
-            })
-            .catch(() => {
-                this.setState({SPO2: -1, BPM: -1});
+                this.setStateAndNotify(json);
             });
     }
 

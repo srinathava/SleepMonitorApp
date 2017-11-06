@@ -1,3 +1,9 @@
+# Google firebase
+google-services.json
+
+# Vim
+*.sw?
+
 # OSX
 #
 .DS_Store
