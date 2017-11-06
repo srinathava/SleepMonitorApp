@@ -16,14 +16,12 @@ public class MainActivity extends ReactActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d(TAG, "onCreate");
-
-        getWindow().addFlags(
-                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | 
-                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON | 
-                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON |
-                WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON
-                );
-
+        // getWindow().addFlags(
+        //         WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | 
+        //         WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON | 
+        //         WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON |
+        //         WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON
+        //         );
         super.onCreate(savedInstanceState);
         
     }

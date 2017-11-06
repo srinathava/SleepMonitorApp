@@ -1,7 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, Button, View, DeviceEventEmitter, AppState } from "react-native";
 import Alarm from './Alarm';
-import KeepAwake from 'react-native-keep-awake';
 import ScreenLock from './ScreenLock';
 
 export default class AlarmManager  extends React.Component {
@@ -45,13 +44,12 @@ export default class AlarmManager  extends React.Component {
         for (var alarm of this.alarms) {
             alarm.snooze();
         }
+        // OXIMETER_ALARM: The oximeter connection alarm is special in that
+        // once snoozed, it is suppressed, so that we only warn about an
+        // oximeter disconnection once till it is re-enabled.
+        this.oximeterConnectionAlarm.suppressed = true;
+
         this.setActiveAlarm();
-
-        console.log('letting screen go back to sleep');
-        ScreenLock.releaseScreenLock();
-
-        console.log('unsetting key listener');
-        this.keyListener.remove();
     }
 
     componentDidMount() {
@@ -66,7 +64,7 @@ export default class AlarmManager  extends React.Component {
     setActiveAlarm() {
         var nextActiveAlarm = undefined;
         for (var alarm of this.alarms) {
-            if (alarm.mode == 'active') {
+            if (alarm.mode === 'active') {
                 console.log(`${alarm.name} is active!`);
                 nextActiveAlarm = alarm;
             }
@@ -87,6 +85,14 @@ export default class AlarmManager  extends React.Component {
                 this.keyListener = DeviceEventEmitter.addListener("onDispatchKeyEvent", () => {
                     this.snooze();
                 });
+            } else {
+                console.log('letting screen go back to sleep');
+                ScreenLock.releaseScreenLock();
+
+                console.log('unsetting key listener');
+                if (this.keyListener !== undefined) {
+                    this.keyListener.remove();
+                }
             }
 
             var txt = this.currentActiveAlarm !== undefined ? this.currentActiveAlarm.txt : '';
@@ -114,12 +120,11 @@ export default class AlarmManager  extends React.Component {
     refreshOximeterStats(data) {
         if (data.SPO2 == -1) {
             this.oximeterConnectionAlarm.trigger(data.oximeterStatus);
-            this.oximeterConnectionAlarm.suppressed = true;
         } else {
-            // got one good reading. Hence we need to alarm about
-            // disconnection again. This way, we only play the oximeter
-            // disconnected alarm once per disconnection and not once
-            // every so many seconds.
+            // OXIMETER_ALARM: got one good reading. Hence we need to alarm
+            // about disconnection again. This way, we only play the
+            // oximeter disconnected alarm once per disconnection and not
+            // once every so many seconds.
             this.oximeterConnectionAlarm.suppressed = false;
             this.oximeterConnectionAlarm.dismiss();
         }

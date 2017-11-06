@@ -29,7 +29,7 @@ export default class Alarm {
             return;
         }
 
-        if (Date.now() - this.snoozeTime < 10*1000) {
+        if (Date.now() - this.snoozeTime < 60*1000) {
             return;
         }
 

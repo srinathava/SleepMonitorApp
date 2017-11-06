@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, View, AppState } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 export default class Status extends React.Component {
     constructor() {
@@ -17,12 +17,10 @@ export default class Status extends React.Component {
 
         this.timer = null;
         this.updateStatus = this.updateStatus.bind(this);
-        this._handleAppStateChange = this._handleAppStateChange.bind(this);
     }
 
     componentDidMount() {
         this.startTimer();
-        AppState.addEventListener("change", this._handleAppStateChange);
     }
 
     startTimer() {
@@ -45,17 +43,6 @@ export default class Status extends React.Component {
 
     componentWillUnmount() {
         this.stopTimer();
-        AppState.removeEventListener("change", this._handleAppStateChange);
-    }
-
-    _handleAppStateChange(nextState) {
-        if (nextState === "background") {
-            console.log('app going into background');
-            //this.stopTimer();
-        } else if (nextState === "active") {
-            console.log('app becoming active');
-            //this.startTimer();
-        }
     }
 
     setStateAndNotify(partialState) {
@@ -69,6 +56,10 @@ export default class Status extends React.Component {
             .then((response) => response.json())
             .then((json) => {
                 this.setStateAndNotify(json);
+            })
+            .catch((err) => {
+                console.log("Error updating status", err);
+                this.setStateAndNotify({SPO2: -2, BPM: -2});
             });
     }
 

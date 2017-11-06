@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, View, WebView, AppState } from "react-native";
+import { StyleSheet, Text, View, WebView } from "react-native";
 import Status from './components/Status';
 import AlarmManager from './AlarmManager';
 
@@ -35,7 +35,6 @@ class WaitForServer extends React.Component {
                 this.props.found(uri);
             }
         });
-
     }
 
     render() {
@@ -65,10 +64,40 @@ class MainPage extends React.Component {
         super();
 
         this.bridge = new Bridge();
+        this.bridge.addListener((status) => this.onStatus(status));
+
+        this.state = {'cacheBust': Date.now()};
+        this.prevReading = undefined;
     }
 
     componentWillUnmount() {
         console.log("unmounting main page");
+    }
+
+    onStatus(status) {
+        if (this.prevReading === -2 && status.SPO2 !== -2) {
+            this.setState({'cacheBust': Date.now()});
+        }
+        this.prevReading = status.SPO2;
+    }
+
+    sendTokenToServer(token) {
+        var baseUri = this.props.uri.replace(/:\d+$/, '');
+        var uri = baseUri + ":4000/registerToken";
+        console.log(`Sending token ${token} to ${uri}`);
+
+        fetch(uri, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                token: token
+            })
+        }).catch((err) => {
+            console.log('Error sending token to server', err);
+        });
     }
 
     componentDidMount() {
@@ -76,17 +105,14 @@ class MainPage extends React.Component {
         // permission in user settings
         // Android: check permission in user settings
         FCM.requestPermissions()
-        .then(()=> {
-            console.log('granted')
-        })
-        .catch(()=>{
-            console.log('notification permission rejected')
-        });
+            .then(()=> {
+                console.log('granted');
+            })
+            .catch(()=>{
+                console.log('notification permission rejected');
+            });
 
-        FCM.getFCMToken().then(token => {
-            console.log(token);
-            // store fcm token in your server
-        });
+        FCM.getFCMToken().then(token => this.sendTokenToServer(token));
     }
 
     render() {
@@ -94,7 +120,7 @@ class MainPage extends React.Component {
             <View style={styles.container}>
                 <View style={{ flex: 1 }}>
                     <WebView
-                        source={{ uri: `${this.props.uri}/minimal.html` }}
+                        source={{ uri: `${this.props.uri}/minimal.html?cacheBust=${this.state.cacheBust}` }}
                         style={{ flex: 1 }}
                     />
                     <Status uri = {this.props.uri} bridge={this.bridge} />
@@ -108,7 +134,8 @@ class MainPage extends React.Component {
 export default class App extends React.Component {
     constructor() {
         super();
-        this.state = { serverUri: 'http://192.168.1.18' };
+        // this.state = { serverUri: 'http://192.168.1.18' };
+        this.state = { serverUri: '' };
     }
 
     render() {
