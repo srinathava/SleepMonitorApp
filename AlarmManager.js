@@ -109,8 +109,8 @@ export default class AlarmManager  extends React.Component {
 
             this.refreshOximeterStats(data);
 
-            if (this.motionEnabled && data.motion == 1) {
-                this.motionAlarm.trigger("Baby's moving! <small>" + data.motionReason + "</small>");
+            if (data.motion == 1) {
+                this.motionAlarm.trigger("Baby's moving! " + data.motionReason);
             }
         }
 
